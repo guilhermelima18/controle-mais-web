@@ -1,9 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "sonner";
 import {
   LayoutDashboard,
   ListOrdered,
@@ -11,6 +9,8 @@ import {
   PlusCircle,
   Wallet,
 } from "lucide-react";
+
+import { logoutAction } from "@/app/actions/auth";
 
 import { cn } from "@/lib/utils";
 
@@ -25,13 +25,6 @@ type AppLayoutProps = {
 };
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const navigate = useRouter();
-
-  const handleLogout = async () => {
-    toast.success("Você saiu da conta.");
-    navigate.push("/");
-  };
-
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
@@ -72,8 +65,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           <button
-            onClick={handleLogout}
-            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-surface/60 text-muted-foreground transition-colors hover:text-foreground"
+            onClick={logoutAction}
+            className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-surface/60 text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
             aria-label="Sair"
           >
             <LogOut className="h-4 w-4" />

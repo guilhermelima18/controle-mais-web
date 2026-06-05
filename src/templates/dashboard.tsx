@@ -14,7 +14,15 @@ import {
   SEED_TRANSACTIONS,
 } from "@/helpers/mocks/finance-data";
 
-export function DashboardTemplate() {
+type DashboardTemplateProps = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
+export function DashboardTemplate({ user }: DashboardTemplateProps) {
   const transactions = SEED_TRANSACTIONS;
 
   const { income, expense, balance, byCategory } = useMemo(() => {
@@ -60,7 +68,7 @@ export function DashboardTemplate() {
         <header>
           <p className="text-sm text-muted-foreground">Junho de 2026</p>
           <h1 className="mt-1 text-3xl font-semibold md:text-4xl">
-            Olá, Guilherme 👋
+            Olá, {user?.name} 👋
           </h1>
           <p className="mt-1 text-muted-foreground">
             Aqui está o resumo das suas finanças.
