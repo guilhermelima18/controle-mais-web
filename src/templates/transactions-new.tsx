@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDownRight, ArrowUpRight, Check } from "lucide-react";
 import { toast } from "sonner";
+import { NumericFormat } from "react-number-format";
 
-import { cn } from "@/lib/utils";
+import { useCategories } from "@/hooks/use-categories";
+import { useTransactions } from "@/hooks/use-transactions";
 
 import { AppLayout } from "@/components/app-layout";
 import { TypeButton } from "@/components/type-button";
@@ -14,35 +16,83 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { CATEGORIES, TxType } from "@/helpers/mocks/finance-data";
+import { cn } from "@/lib/utils";
+import { transformCategories, TxType } from "@/helpers/adapters/categories";
 
-export function TransactionsNewTemplate() {
+type TransactionsNewTemplateProps = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
+export function TransactionsNewTemplate({
+  user,
+}: TransactionsNewTemplateProps) {
   const navigate = useRouter();
 
-  const [type, setType] = useState<TxType>("expense");
+  const [type, setType] = useState<TxType>("income");
   const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(CATEGORIES.expense[0].name);
+  const [amount, setAmount] = useState<number | undefined>(undefined);
+  const [category, setCategory] = useState<string | null>(null);
+  const [categorySelected, setCategorySelected] = useState<string | null>(null);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+
+  const { categories, onListCategories } = useCategories();
+  const { onCreateTransaction } = useTransactions();
+
+  const categoriesMapped =
+    categories && categories?.length > 0
+      ? transformCategories(categories)
+      : { income: [], expense: [] };
 
   const handleType = (t: TxType) => {
     setType(t);
-    setCategory(CATEGORIES[t][0].name);
+    setCategory(categoriesMapped[t][0].name);
+    setCategorySelected(categoriesMapped[t][0].id);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.SubmitEvent) => {
     e.preventDefault();
 
-    const value = parseFloat(amount.replace(",", "."));
+    const [year, month, day] = date.split("-").map(Number);
+    const now = new Date();
+    const finalDateTime = new Date(
+      year,
+      month - 1,
+      day,
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds(),
+    );
+    const isoWithTime = finalDateTime.toISOString();
 
-    if (!description.trim() || !value || value <= 0) {
-      toast.error("Preencha descrição e valor válido.");
-      return;
+    if (!description?.trim() || !amount || !categorySelected) {
+      return toast.error("Preencha os campos corretamente!", {
+        position: "top-right",
+      });
     }
 
-    toast.success("Transação cadastrada!");
+    await onCreateTransaction({
+      description,
+      amount,
+      type: type.toUpperCase() as "INCOME" | "EXPENSE",
+      date: isoWithTime,
+      userId: user?.id,
+      categoryId: categorySelected as string,
+    });
+
+    toast.success("Transação cadastrada!", {
+      position: "top-right",
+    });
     navigate.push("/transactions");
   };
+
+  useEffect(() => {
+    onListCategories();
+  }, [onListCategories]);
 
   return (
     <AppLayout>
@@ -89,12 +139,19 @@ export function TransactionsNewTemplate() {
                 >
                   R$
                 </span>
-                <input
+
+                <NumericFormat
                   value={amount}
-                  onChange={(e) =>
-                    setAmount(e.target.value.replace(/[^0-9.,]/g, ""))
-                  }
+                  onValueChange={(values) => {
+                    setAmount(values.floatValue);
+                  }}
                   placeholder="0,00"
+                  decimalSeparator=","
+                  thousandSeparator="."
+                  fixedDecimalScale
+                  allowLeadingZeros
+                  decimalScale={2}
+                  allowNegative={false}
                   inputMode="decimal"
                   className="w-full bg-transparent font-display text-5xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground/40"
                 />
@@ -107,7 +164,17 @@ export function TransactionsNewTemplate() {
               <Input
                 id="desc"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value
+                    ?.toLowerCase()
+                    ?.split(" ")
+                    ?.map(
+                      (word) => word.charAt(0).toUpperCase() + word.slice(1),
+                    )
+                    ?.join(" ");
+
+                  setDescription(value);
+                }}
                 placeholder="Ex.: Mercado, salário, conta de luz…"
                 className="h-11 border-border/60 bg-background/60"
               />
@@ -116,14 +183,17 @@ export function TransactionsNewTemplate() {
             <div className="space-y-2">
               <Label>Categoria</Label>
               <div className="flex flex-wrap gap-2">
-                {CATEGORIES[type].map((c) => {
+                {categoriesMapped[type].map((c) => {
                   const active = category === c.name;
 
                   return (
                     <button
                       type="button"
                       key={c.name}
-                      onClick={() => setCategory(c.name)}
+                      onClick={() => {
+                        setCategorySelected(c.id);
+                        setCategory(c.name);
+                      }}
                       className={cn(
                         "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm transition-all",
                         active

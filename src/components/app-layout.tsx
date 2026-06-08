@@ -9,6 +9,7 @@ import {
   PlusCircle,
   Wallet,
 } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 
 import { logoutAction } from "@/app/actions/auth";
 
@@ -96,6 +97,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           );
         })}
       </nav>
+
+      <Toaster />
     </div>
   );
 }

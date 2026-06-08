@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Search, Trash2, X } from "lucide-react";
 
 import { AppLayout } from "@/components/app-layout";
@@ -10,45 +10,42 @@ import { Button } from "@/components/ui/button";
 import { FilterChip } from "@/components/filter-chip";
 
 import {
-  CATEGORIES,
   categoryColor,
   formatBRL,
   formatShortDate,
-  SEED_TRANSACTIONS,
 } from "@/helpers/mocks/finance-data";
+import { useCategories } from "@/hooks/use-categories";
+import { useTransactions } from "@/hooks/use-transactions";
+import { formatCurrency } from "@/helpers/masks";
 
-type TypeFilter = "all" | "income" | "expense";
+type TypeFilter = "income" | "expense";
 
 export function TransactionsTemplate() {
-  const transactions = SEED_TRANSACTIONS;
+  const [query, setQuery] = useState<string | undefined>(undefined);
+  const [type, setType] = useState<TypeFilter | undefined>(undefined);
+  const [category, setCategory] = useState<string | undefined>(undefined);
 
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState<TypeFilter>("all");
-  const [category, setCategory] = useState<string>("all");
+  const { categories, onListCategories } = useCategories();
+  const { transactions, onListTransactionsByFilters } = useTransactions();
 
-  const allCategories = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          [...CATEGORIES.income, ...CATEGORIES.expense].map((c) => c.name),
-        ),
-      ),
-    [],
-  );
+  const hasFilters = query || type || category;
 
-  const filtered = useMemo(() => {
-    return transactions
-      .filter((t) => (type === "all" ? true : t.type === type))
-      .filter((t) => (category === "all" ? true : t.category === category))
-      .filter((t) =>
-        query
-          ? t.description.toLowerCase().includes(query.toLowerCase())
-          : true,
-      )
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transactions, type, category, query]);
+  useEffect(() => {
+    onListCategories();
+  }, [onListCategories]);
 
-  const hasFilters = query || type !== "all" || category !== "all";
+  useEffect(() => {
+    onListTransactionsByFilters({
+      search: undefined,
+      category,
+      type:
+        type === "expense"
+          ? "EXPENSE"
+          : type === "income"
+            ? "INCOME"
+            : undefined,
+    });
+  }, [category, type, onListTransactionsByFilters]);
 
   return (
     <AppLayout>
@@ -57,8 +54,8 @@ export function TransactionsTemplate() {
           <div>
             <h1 className="text-3xl font-semibold md:text-4xl">Transações</h1>
             <p className="mt-1 text-muted-foreground">
-              {filtered.length}{" "}
-              {filtered.length === 1 ? "lançamento" : "lançamentos"}
+              {transactions?.length}{" "}
+              {transactions?.length === 1 ? "lançamento" : "lançamentos"}
             </p>
           </div>
         </header>
@@ -76,10 +73,7 @@ export function TransactionsTemplate() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <FilterChip
-                active={type === "all"}
-                onClick={() => setType("all")}
-              >
+              <FilterChip active={!type} onClick={() => setType(undefined)}>
                 Todos
               </FilterChip>
               <FilterChip
@@ -100,20 +94,20 @@ export function TransactionsTemplate() {
 
             <div className="flex flex-wrap gap-2">
               <FilterChip
-                active={category === "all"}
-                onClick={() => setCategory("all")}
+                active={category === undefined}
+                onClick={() => setCategory(undefined)}
                 size="sm"
               >
                 Todas categorias
               </FilterChip>
-              {allCategories.map((c) => (
+              {categories.map((c) => (
                 <FilterChip
-                  key={c}
-                  active={category === c}
-                  onClick={() => setCategory(c)}
+                  key={c.id}
+                  active={category === c.id}
+                  onClick={() => setCategory(c.id)}
                   size="sm"
                 >
-                  {c}
+                  {c.name}
                 </FilterChip>
               ))}
             </div>
@@ -121,9 +115,9 @@ export function TransactionsTemplate() {
             {hasFilters && (
               <button
                 onClick={() => {
-                  setQuery("");
-                  setType("all");
-                  setCategory("all");
+                  setQuery(undefined);
+                  setType(undefined);
+                  setCategory(undefined);
                 }}
                 className="inline-flex w-fit items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               >
@@ -133,17 +127,18 @@ export function TransactionsTemplate() {
           </div>
         </Card>
 
-        {/* List */}
         <Card className="divide-y divide-border/60 border-border/60 bg-surface/40 p-0 overflow-hidden">
-          {filtered.length === 0 && (
+          {transactions?.length === 0 && (
             <div className="p-12 text-center text-sm text-muted-foreground">
               Nenhuma transação encontrada com esses filtros.
             </div>
           )}
 
-          {filtered.map((t) => {
-            const color = categoryColor(t.type, t.category);
-            const isIncome = t.type === "income";
+          {transactions.map((t) => {
+            const type = t.type?.toLowerCase() as "income" | "expense";
+            const color = categoryColor(type, t.category.name);
+            const isIncome = type === "income";
+
             return (
               <div
                 key={t.id}
@@ -172,7 +167,7 @@ export function TransactionsTemplate() {
                         color,
                       }}
                     >
-                      {t.category}
+                      {t.category.name}
                     </span>
                     <span>·</span>
                     <span>{formatShortDate(t.date)}</span>
@@ -187,7 +182,10 @@ export function TransactionsTemplate() {
                         : "var(--color-expense)",
                     }}
                   >
-                    {isIncome ? "+" : "−"} {formatBRL(t.amount)}
+                    {isIncome ? "+" : "−"}{" "}
+                    {formatCurrency(
+                      Math.round(Number(t.amount) * 100).toString(),
+                    )}
                   </p>
                 </div>
 
