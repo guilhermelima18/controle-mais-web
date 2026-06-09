@@ -41,6 +41,7 @@ export function CategoryPanel({
       <ul className="mt-5 space-y-3">
         {items.map((c) => {
           const pct = (c.value / total) * 100;
+
           return (
             <li key={c.name} className="flex items-center gap-3">
               <span
@@ -58,7 +59,7 @@ export function CategoryPanel({
           );
         })}
 
-        {items.length === 0 && (
+        {items?.length === 0 && (
           <li className="py-6 text-center text-sm text-muted-foreground">
             Nenhum lançamento ainda.
           </li>

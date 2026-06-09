@@ -4,6 +4,8 @@ import { useCallback, useState } from "react";
 import {
   listTransactionsByFiltersAction,
   createTransactionAction,
+  listTransactionsDashboardAction,
+  deleteTransactionAction,
 } from "@/app/actions/transactions";
 
 type Transactions = {
@@ -20,8 +22,28 @@ type Transactions = {
   };
 };
 
+type TransactionsDashboard = {
+  total: number;
+  income: number;
+  expense: number;
+  perType: {
+    income: {
+      name: string;
+      value: number;
+      percentage: number;
+    }[];
+    expense: {
+      name: string;
+      value: number;
+      percentage: number;
+    }[];
+  };
+};
+
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transactions[]>([]);
+  const [transactionsDashboard, setTransactionsDashboard] =
+    useState<TransactionsDashboard | null>(null);
 
   const onListTransactionsByFilters = useCallback(
     async ({
@@ -47,6 +69,17 @@ export function useTransactions() {
     },
     [],
   );
+
+  const onListTransactionsDashboard = useCallback(async () => {
+    const result = await listTransactionsDashboardAction();
+
+    if (!result.success) {
+      throw result.message;
+    }
+
+    setTransactionsDashboard(result.data || []);
+  }, []);
+
   const onCreateTransaction = useCallback(
     async ({
       description,
@@ -81,9 +114,25 @@ export function useTransactions() {
     [],
   );
 
+  const onDeleteTransaction = useCallback(
+    async ({ transactionId }: { transactionId: string }) => {
+      const result = await deleteTransactionAction({ transactionId });
+
+      if (!result.success) {
+        throw result.message;
+      }
+
+      return result;
+    },
+    [],
+  );
+
   return {
     transactions,
+    transactionsDashboard,
     onListTransactionsByFilters,
+    onListTransactionsDashboard,
     onCreateTransaction,
+    onDeleteTransaction,
   };
 }

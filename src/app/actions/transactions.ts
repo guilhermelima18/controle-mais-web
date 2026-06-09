@@ -13,13 +13,27 @@ export async function listTransactionsByFiltersAction({
   type?: string;
 }) {
   try {
-    const response = await api.get("/transactions/list", {
+    const response = await api.get("/transactions", {
       params: {
         search,
         category,
         type,
       },
     });
+
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    if (error.response) {
+      return { success: false, message: error.response.data };
+    }
+
+    return { success: false, message: "Erro ao listar as transações." };
+  }
+}
+
+export async function listTransactionsDashboardAction() {
+  try {
+    const response = await api.get("/transactions/dashboard");
 
     return { success: true, data: response.data };
   } catch (error: any) {
@@ -63,5 +77,23 @@ export async function createTransactionAction({
     }
 
     return { success: false, message: "Erro ao criar a transação." };
+  }
+}
+
+export async function deleteTransactionAction({
+  transactionId,
+}: {
+  transactionId: string;
+}) {
+  try {
+    const response = await api.delete(`/transactions/${transactionId}`);
+
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    if (error.response) {
+      return { success: false, message: error.response.data };
+    }
+
+    return { success: false, message: "Erro ao excluir a transação." };
   }
 }

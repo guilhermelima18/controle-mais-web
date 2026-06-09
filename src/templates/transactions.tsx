@@ -1,21 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Search, Trash2, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Search, X } from "lucide-react";
+
+import { useCategories } from "@/hooks/use-categories";
+import { useTransactions } from "@/hooks/use-transactions";
 
 import { AppLayout } from "@/components/app-layout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { FilterChip } from "@/components/filter-chip";
+import { DeleteTransactionButton } from "@/components/delete-transaction-button";
 
-import {
-  categoryColor,
-  formatBRL,
-  formatShortDate,
-} from "@/helpers/mocks/finance-data";
-import { useCategories } from "@/hooks/use-categories";
-import { useTransactions } from "@/hooks/use-transactions";
+import { categoryColor } from "@/helpers/mocks/finance-data";
 import { formatCurrency } from "@/helpers/masks";
 
 type TypeFilter = "income" | "expense";
@@ -26,9 +23,28 @@ export function TransactionsTemplate() {
   const [category, setCategory] = useState<string | undefined>(undefined);
 
   const { categories, onListCategories } = useCategories();
-  const { transactions, onListTransactionsByFilters } = useTransactions();
+  const { transactions, onListTransactionsByFilters, onDeleteTransaction } =
+    useTransactions();
 
   const hasFilters = query || type || category;
+
+  const handleDeleteTransaction = async ({
+    transactionId,
+  }: {
+    transactionId: string;
+  }) => {
+    await onDeleteTransaction({ transactionId });
+    await onListTransactionsByFilters({
+      search: undefined,
+      category,
+      type:
+        type === "expense"
+          ? "EXPENSE"
+          : type === "income"
+            ? "INCOME"
+            : undefined,
+    });
+  };
 
   useEffect(() => {
     onListCategories();
@@ -170,7 +186,13 @@ export function TransactionsTemplate() {
                       {t.category.name}
                     </span>
                     <span>·</span>
-                    <span>{formatShortDate(t.date)}</span>
+                    <span>
+                      {new Date(t.date).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </span>
                   </div>
                 </div>
                 <div className="text-right">
@@ -189,14 +211,12 @@ export function TransactionsTemplate() {
                   </p>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 transition-opacity group-hover:opacity-100"
-                  aria-label="Remover"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <DeleteTransactionButton
+                  id={t.id}
+                  onDelete={(id) =>
+                    handleDeleteTransaction({ transactionId: id })
+                  }
+                />
               </div>
             );
           })}
