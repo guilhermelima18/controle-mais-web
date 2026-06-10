@@ -25,7 +25,7 @@ export function SignInTemplate() {
 
   const { onSignIn } = useAuth();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setLoading(true);
 

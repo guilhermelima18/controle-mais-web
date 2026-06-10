@@ -2,18 +2,15 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
-import {
-  LayoutDashboard,
-  ListOrdered,
-  LogOut,
-  PlusCircle,
-  Wallet,
-} from "lucide-react";
+import Image from "next/image";
+import { LayoutDashboard, ListOrdered, LogOut, PlusCircle } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 
 import { logoutAction } from "@/app/actions/auth";
 
 import { cn } from "@/lib/utils";
+
+import logo from "@/assets/logo-controle-mais.png";
 
 const nav = [
   { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
@@ -30,18 +27,8 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <Wallet className="h-5 w-5" />
-            </div>
-            <div className="leading-tight">
-              <p className="font-display text-base font-semibold tracking-tight">
-                Fluxo
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                controle financeiro
-              </p>
-            </div>
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <Image src={logo} alt="Logo Controle Mais" width={80} height={80} />
           </Link>
 
           <nav className="hidden items-center gap-1 rounded-full border border-border/60 bg-surface/60 p-1 md:flex">

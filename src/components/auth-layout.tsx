@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Wallet } from "lucide-react";
+import Image from "next/image";
 
 import { Toaster } from "@/components/ui/sonner";
+
+import logo from "@/assets/logo-controle-mais.png";
 
 type AuthLayoutProps = {
   title: string;
@@ -24,21 +26,16 @@ export function AuthLayout({
       <div className="pointer-events-none absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-accent/30 blur-3xl" />
 
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-        <Link href="/login" className="mb-10 flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-            <Wallet className="h-5 w-5" />
-          </div>
-          <div className="leading-tight">
-            <p className="font-display text-lg font-semibold tracking-tight">
-              Fluxo
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              controle financeiro
-            </p>
-          </div>
-        </Link>
+        <div className="flex flex-col items-center mb-7">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image
+              src={logo}
+              alt="Logo Controle Mais"
+              width={150}
+              height={150}
+            />
+          </Link>
 
-        <div className="mb-7">
           <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
             {title}
           </h1>

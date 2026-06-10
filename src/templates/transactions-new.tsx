@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownRight, ArrowUpRight, Check } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { NumericFormat } from "react-number-format";
 
@@ -38,6 +38,7 @@ export function TransactionsNewTemplate({
   const [category, setCategory] = useState<string | null>(null);
   const [categorySelected, setCategorySelected] = useState<string | null>(null);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [loading, setLoading] = useState(false);
 
   const { categories, onListCategories } = useCategories();
   const { onCreateTransaction } = useTransactions();
@@ -55,6 +56,7 @@ export function TransactionsNewTemplate({
 
   const submit = async (e: React.SubmitEvent) => {
     e.preventDefault();
+    setLoading(true);
 
     const [year, month, day] = date.split("-").map(Number);
     const now = new Date();
@@ -87,7 +89,12 @@ export function TransactionsNewTemplate({
     toast.success("Transação cadastrada!", {
       position: "top-right",
     });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     navigate.push("/transactions");
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -236,8 +243,13 @@ export function TransactionsNewTemplate({
             <Button
               type="submit"
               className="h-12 w-full text-base font-semibold shadow-lg shadow-primary/20 cursor-pointer"
+              disabled={loading}
             >
-              Cadastrar transação
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Cadastrar transação"
+              )}
             </Button>
           </form>
         </Card>

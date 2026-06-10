@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Search, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Loader2, Search, X } from "lucide-react";
+import { useDebounce } from "use-debounce";
 
 import { useCategories } from "@/hooks/use-categories";
 import { useTransactions } from "@/hooks/use-transactions";
@@ -14,6 +15,7 @@ import { DeleteTransactionButton } from "@/components/delete-transaction-button"
 
 import { categoryColor } from "@/helpers/mocks/finance-data";
 import { formatCurrency } from "@/helpers/masks";
+import { Label } from "@/components/ui/label";
 
 type TypeFilter = "income" | "expense";
 
@@ -21,10 +23,24 @@ export function TransactionsTemplate() {
   const [query, setQuery] = useState<string | undefined>(undefined);
   const [type, setType] = useState<TypeFilter | undefined>(undefined);
   const [category, setCategory] = useState<string | undefined>(undefined);
+  const [initialDate, setInitialDate] = useState(() => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    return firstDay.toISOString().slice(0, 10);
+  });
+  const [finalDate, setFinalDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+
+  const [inputSearch] = useDebounce(query, 500);
 
   const { categories, onListCategories } = useCategories();
-  const { transactions, onListTransactionsByFilters, onDeleteTransaction } =
-    useTransactions();
+  const {
+    transactions,
+    transactionsLoading,
+    onListTransactionsByFilters,
+    onDeleteTransaction,
+  } = useTransactions();
 
   const hasFilters = query || type || category;
 
@@ -35,14 +51,11 @@ export function TransactionsTemplate() {
   }) => {
     await onDeleteTransaction({ transactionId });
     await onListTransactionsByFilters({
-      search: undefined,
+      search: inputSearch ?? undefined,
       category,
-      type:
-        type === "expense"
-          ? "EXPENSE"
-          : type === "income"
-            ? "INCOME"
-            : undefined,
+      type: type?.toUpperCase() ?? undefined,
+      initialDate,
+      finalDate,
     });
   };
 
@@ -52,16 +65,20 @@ export function TransactionsTemplate() {
 
   useEffect(() => {
     onListTransactionsByFilters({
-      search: undefined,
+      search: inputSearch ?? undefined,
       category,
-      type:
-        type === "expense"
-          ? "EXPENSE"
-          : type === "income"
-            ? "INCOME"
-            : undefined,
+      type: type?.toUpperCase() ?? undefined,
+      initialDate,
+      finalDate,
     });
-  }, [category, type, onListTransactionsByFilters]);
+  }, [
+    inputSearch,
+    category,
+    type,
+    initialDate,
+    finalDate,
+    onListTransactionsByFilters,
+  ]);
 
   return (
     <AppLayout>
@@ -78,10 +95,34 @@ export function TransactionsTemplate() {
 
         <Card className="border-border/60 bg-surface/60 p-5">
           <div className="flex flex-col gap-4">
+            <div className="w-full flex items-center gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="initial-date">Data Início</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={initialDate}
+                  onChange={(e) => setInitialDate(e.target.value)}
+                  className="h-11 border-border/60 bg-background/60"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="final-date">Data Fim</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={finalDate}
+                  onChange={(e) => setFinalDate(e.target.value)}
+                  className="h-11 border-border/60 bg-background/60"
+                />
+              </div>
+            </div>
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                value={query}
+                value={query ?? ""}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por descrição…"
                 className="h-11 border-border/60 bg-background/60 pl-10"
@@ -143,84 +184,90 @@ export function TransactionsTemplate() {
           </div>
         </Card>
 
-        <Card className="divide-y divide-border/60 border-border/60 bg-surface/40 p-0 overflow-hidden">
-          {transactions?.length === 0 && (
-            <div className="p-12 text-center text-sm text-muted-foreground">
-              Nenhuma transação encontrada com esses filtros.
-            </div>
-          )}
+        {transactionsLoading ? (
+          <div className="w-full h-52 flex items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin" />
+          </div>
+        ) : (
+          <Card className="bg-surface/40 max-h-95 divide-y divide-border/60 border-border/60 p-0 overflow-auto">
+            {transactions?.length === 0 && (
+              <div className="p-12 text-center text-sm text-muted-foreground">
+                Nenhuma transação encontrada com esses filtros.
+              </div>
+            )}
 
-          {transactions.map((t) => {
-            const type = t.type?.toLowerCase() as "income" | "expense";
-            const color = categoryColor(type, t.category.name);
-            const isIncome = type === "income";
+            {transactions.map((t) => {
+              const type = t.type?.toLowerCase() as "income" | "expense";
+              const color = categoryColor(type, t.category.name);
+              const isIncome = type === "income";
 
-            return (
-              <div
-                key={t.id}
-                className="group flex items-center gap-4 p-4 transition-colors hover:bg-background/40"
-              >
+              return (
                 <div
-                  className="grid h-11 w-11 place-items-center rounded-xl"
-                  style={{
-                    background: `color-mix(in oklab, ${color} 18%, transparent)`,
-                    color,
-                  }}
+                  key={t.id}
+                  className="group flex items-center gap-4 p-4 transition-colors hover:bg-background/40"
                 >
-                  {isIncome ? (
-                    <ArrowUpRight className="h-5 w-5" />
-                  ) : (
-                    <ArrowDownRight className="h-5 w-5" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{t.description}</p>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                    <span
-                      className="rounded-full px-2 py-0.5"
-                      style={{
-                        background: `color-mix(in oklab, ${color} 15%, transparent)`,
-                        color,
-                      }}
-                    >
-                      {t.category.name}
-                    </span>
-                    <span>·</span>
-                    <span>
-                      {new Date(t.date).toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p
-                    className="font-display text-base font-semibold tabular-nums"
+                  <div
+                    className="grid h-11 w-11 place-items-center rounded-xl"
                     style={{
-                      color: isIncome
-                        ? "var(--color-income)"
-                        : "var(--color-expense)",
+                      background: `color-mix(in oklab, ${color} 18%, transparent)`,
+                      color,
                     }}
                   >
-                    {isIncome ? "+" : "−"}{" "}
-                    {formatCurrency(
-                      Math.round(Number(t.amount) * 100).toString(),
+                    {isIncome ? (
+                      <ArrowUpRight className="h-5 w-5" />
+                    ) : (
+                      <ArrowDownRight className="h-5 w-5" />
                     )}
-                  </p>
-                </div>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{t.description}</p>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span
+                        className="rounded-full px-2 py-0.5"
+                        style={{
+                          background: `color-mix(in oklab, ${color} 15%, transparent)`,
+                          color,
+                        }}
+                      >
+                        {t.category.name}
+                      </span>
+                      <span>·</span>
+                      <span>
+                        {new Date(t.date).toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className="font-display text-base font-semibold tabular-nums"
+                      style={{
+                        color: isIncome
+                          ? "var(--color-income)"
+                          : "var(--color-expense)",
+                      }}
+                    >
+                      {isIncome ? "+" : "−"}{" "}
+                      {formatCurrency(
+                        Math.round(Number(t.amount) * 100).toString(),
+                      )}
+                    </p>
+                  </div>
 
-                <DeleteTransactionButton
-                  id={t.id}
-                  onDelete={(id) =>
-                    handleDeleteTransaction({ transactionId: id })
-                  }
-                />
-              </div>
-            );
-          })}
-        </Card>
+                  <DeleteTransactionButton
+                    id={t.id}
+                    onDelete={(id) =>
+                      handleDeleteTransaction({ transactionId: id })
+                    }
+                  />
+                </div>
+              );
+            })}
+          </Card>
+        )}
       </div>
     </AppLayout>
   );

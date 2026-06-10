@@ -7,10 +7,14 @@ export async function listTransactionsByFiltersAction({
   search,
   category,
   type,
+  initialDate,
+  finalDate,
 }: {
   search?: string;
   category?: string;
   type?: string;
+  initialDate?: string;
+  finalDate?: string;
 }) {
   try {
     const response = await api.get("/transactions", {
@@ -18,6 +22,8 @@ export async function listTransactionsByFiltersAction({
         search,
         category,
         type,
+        initialDate,
+        finalDate,
       },
     });
 

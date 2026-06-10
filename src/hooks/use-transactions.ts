@@ -44,40 +44,61 @@ export function useTransactions() {
   const [transactions, setTransactions] = useState<Transactions[]>([]);
   const [transactionsDashboard, setTransactionsDashboard] =
     useState<TransactionsDashboard | null>(null);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [transactionsDashboardLoading, setTransactionsDashboardLoading] =
+    useState(false);
 
   const onListTransactionsByFilters = useCallback(
     async ({
       search,
       category,
       type,
+      initialDate,
+      finalDate,
     }: {
       search?: string;
       category?: string;
       type?: string;
+      initialDate?: string;
+      finalDate?: string;
     }) => {
+      setTransactionsLoading(true);
+
       const result = await listTransactionsByFiltersAction({
         search,
         category,
         type,
+        initialDate,
+        finalDate,
       });
 
       if (!result.success) {
+        setTransactionsLoading(false);
         throw result.message;
       }
 
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       setTransactions(result.data || []);
+      setTransactionsLoading(false);
     },
     [],
   );
 
   const onListTransactionsDashboard = useCallback(async () => {
+    setTransactionsDashboardLoading(true);
+
     const result = await listTransactionsDashboardAction();
 
     if (!result.success) {
+      setTransactionsDashboardLoading(false);
       throw result.message;
     }
 
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     setTransactionsDashboard(result.data || []);
+    setTransactionsDashboardLoading(false);
   }, []);
 
   const onCreateTransaction = useCallback(
@@ -130,6 +151,8 @@ export function useTransactions() {
   return {
     transactions,
     transactionsDashboard,
+    transactionsLoading,
+    transactionsDashboardLoading,
     onListTransactionsByFilters,
     onListTransactionsDashboard,
     onCreateTransaction,
