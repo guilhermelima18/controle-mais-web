@@ -59,16 +59,7 @@ export function TransactionsNewTemplate({
     setLoading(true);
 
     const [year, month, day] = date.split("-").map(Number);
-    const now = new Date();
-    const finalDateTime = new Date(
-      year,
-      month - 1,
-      day,
-      now.getHours(),
-      now.getMinutes(),
-      now.getSeconds(),
-      now.getMilliseconds(),
-    );
+    const finalDateTime = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
     const isoWithTime = finalDateTime.toISOString();
 
     if (!description?.trim() || !amount || !categorySelected) {
