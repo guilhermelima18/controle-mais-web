@@ -37,7 +37,14 @@ export function TransactionsNewTemplate({
   const [amount, setAmount] = useState<number | undefined>(undefined);
   const [category, setCategory] = useState<string | null>(null);
   const [categorySelected, setCategorySelected] = useState<string | null>(null);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  });
   const [loading, setLoading] = useState(false);
 
   const { categories, onListCategories } = useCategories();
