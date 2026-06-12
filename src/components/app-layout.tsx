@@ -28,7 +28,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <Image src={logo} alt="Logo Controle Mais" width={80} height={80} />
+            <Image
+              src={logo}
+              alt="Logo Controle Mais"
+              width={70}
+              height={70}
+              loading="eager"
+            />
           </Link>
 
           <nav className="hidden items-center gap-1 rounded-full border border-border/60 bg-surface/60 p-1 md:flex">
@@ -62,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8 pb-28">{children}</main>
+      <main className="mx-auto max-w-330 px-6 py-4 pb-28">{children}</main>
 
       <nav className="fixed inset-x-4 bottom-4 z-30 flex items-center justify-around rounded-2xl border border-border/60 bg-surface-elevated/90 p-2 shadow-2xl backdrop-blur-xl md:hidden">
         {nav.map((item) => {

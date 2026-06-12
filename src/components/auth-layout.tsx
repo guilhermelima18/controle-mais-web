@@ -33,6 +33,7 @@ export function AuthLayout({
               alt="Logo Controle Mais"
               width={150}
               height={150}
+              loading="eager"
             />
           </Link>
 

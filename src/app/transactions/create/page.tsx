@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { TransactionsNewTemplate } from "@/templates/transactions-new";
+import { TransactionsNewTemplate } from "@/templates/transaction-new";
 
-export default async function TransactionsNew() {
+export default async function TransactionNew() {
   const cookieStorage = await cookies();
   const userCookie = cookieStorage.get("@controle-mais:user");
 

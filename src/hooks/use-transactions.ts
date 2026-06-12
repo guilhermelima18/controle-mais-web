@@ -6,9 +6,21 @@ import {
   createTransactionAction,
   listTransactionsDashboardAction,
   deleteTransactionAction,
+  listTransactionAction,
+  updateTransactionAction,
 } from "@/app/actions/transactions";
 
-type Transactions = {
+type TransactionsFilters = {
+  data: Transactions[];
+  meta: {
+    totalItems: number;
+    currentPage: number;
+    totalPages: number;
+    itemsPerPage: number;
+  };
+};
+
+export type Transactions = {
   id: string;
   description: string;
   amount: string;
@@ -41,9 +53,13 @@ type TransactionsDashboard = {
 };
 
 export function useTransactions() {
-  const [transactions, setTransactions] = useState<Transactions[]>([]);
+  const [transaction, setTransaction] = useState<Transactions | null>(null);
+  const [transactions, setTransactions] = useState<TransactionsFilters | null>(
+    null,
+  );
   const [transactionsDashboard, setTransactionsDashboard] =
     useState<TransactionsDashboard | null>(null);
+  const [transactionLoading, setTransactionLoading] = useState(false);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [transactionsDashboardLoading, setTransactionsDashboardLoading] =
     useState(false);
@@ -55,12 +71,16 @@ export function useTransactions() {
       type,
       initialDate,
       finalDate,
+      page = "1",
+      perPage = "5",
     }: {
       search?: string;
       category?: string;
       type?: string;
       initialDate?: string;
       finalDate?: string;
+      page?: string;
+      perPage?: string;
     }) => {
       setTransactionsLoading(true);
 
@@ -70,6 +90,8 @@ export function useTransactions() {
         type,
         initialDate,
         finalDate,
+        page,
+        perPage,
       });
 
       if (!result.success) {
@@ -79,7 +101,9 @@ export function useTransactions() {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      setTransactions(result.data || []);
+      console.log(result);
+
+      setTransactions(result.data);
       setTransactionsLoading(false);
     },
     [],
@@ -100,6 +124,25 @@ export function useTransactions() {
     setTransactionsDashboard(result.data || []);
     setTransactionsDashboardLoading(false);
   }, []);
+
+  const onListTransaction = useCallback(
+    async ({ transactionId }: { transactionId: string }) => {
+      setTransactionLoading(true);
+
+      const result = await listTransactionAction({ transactionId });
+
+      if (!result.success) {
+        setTransactionLoading(false);
+        throw result.message;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      setTransaction(result.data || null);
+      setTransactionLoading(false);
+    },
+    [],
+  );
 
   const onCreateTransaction = useCallback(
     async ({
@@ -135,6 +178,43 @@ export function useTransactions() {
     [],
   );
 
+  const onUpdateTransaction = useCallback(
+    async ({
+      description,
+      amount,
+      type,
+      date,
+      categoryId,
+      userId,
+      transactionId,
+    }: {
+      description?: string;
+      amount?: number;
+      type?: "INCOME" | "EXPENSE";
+      date?: string;
+      categoryId?: string;
+      userId: string;
+      transactionId: string;
+    }) => {
+      const result = await updateTransactionAction({
+        description,
+        amount,
+        type,
+        date,
+        categoryId,
+        userId,
+        transactionId,
+      });
+
+      if (!result.success) {
+        throw result.message;
+      }
+
+      return result;
+    },
+    [],
+  );
+
   const onDeleteTransaction = useCallback(
     async ({ transactionId }: { transactionId: string }) => {
       const result = await deleteTransactionAction({ transactionId });
@@ -149,13 +229,17 @@ export function useTransactions() {
   );
 
   return {
+    transaction,
     transactions,
     transactionsDashboard,
+    transactionLoading,
     transactionsLoading,
     transactionsDashboardLoading,
+    onListTransaction,
     onListTransactionsByFilters,
     onListTransactionsDashboard,
     onCreateTransaction,
+    onUpdateTransaction,
     onDeleteTransaction,
   };
 }

@@ -79,11 +79,12 @@
     font-family: var(--font-sans);
   }
   body {
-    background: radial-gradient(
+    /* background: radial-gradient(
       ellipse at top,
       oklch(0.22 0.04 260) 0%,
       var(--color-background) 60%
-    );
+    ); */
+    background: var(--color-background) 60%;
     background-attachment: fixed;
     color: var(--color-foreground);
     min-height: 100vh;

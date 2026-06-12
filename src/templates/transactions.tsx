@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Loader2, Search, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Loader2,
+  Pencil,
+  Search,
+  X,
+} from "lucide-react";
 import { useDebounce } from "use-debounce";
 
 import { useCategories } from "@/hooks/use-categories";
@@ -16,10 +24,22 @@ import { DeleteTransactionButton } from "@/components/delete-transaction-button"
 import { categoryColor } from "@/helpers/mocks/finance-data";
 import { formatCurrency } from "@/helpers/masks";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type TypeFilter = "income" | "expense";
 
 export function TransactionsTemplate() {
+  const navigate = useRouter();
+
+  const [page, setPage] = useState(1);
   const [query, setQuery] = useState<string | undefined>(undefined);
   const [type, setType] = useState<TypeFilter | undefined>(undefined);
   const [category, setCategory] = useState<string | undefined>(undefined);
@@ -49,6 +69,14 @@ export function TransactionsTemplate() {
 
   const hasFilters = query || type || category;
 
+  const handleUpdateTransaction = async ({
+    transactionId,
+  }: {
+    transactionId: string;
+  }) => {
+    navigate.push(`/transactions/update/${transactionId}`);
+  };
+
   const handleDeleteTransaction = async ({
     transactionId,
   }: {
@@ -61,6 +89,7 @@ export function TransactionsTemplate() {
       type: type?.toUpperCase() ?? undefined,
       initialDate,
       finalDate,
+      page: "1",
     });
   };
 
@@ -75,8 +104,10 @@ export function TransactionsTemplate() {
       type: type?.toUpperCase() ?? undefined,
       initialDate,
       finalDate,
+      page: String(page),
     });
   }, [
+    page,
     inputSearch,
     category,
     type,
@@ -87,13 +118,15 @@ export function TransactionsTemplate() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold md:text-4xl">Transações</h1>
             <p className="mt-1 text-muted-foreground">
-              {transactions?.length}{" "}
-              {transactions?.length === 1 ? "lançamento" : "lançamentos"}
+              {transactions && transactions?.meta?.totalItems}{" "}
+              {transactions && transactions?.meta?.totalItems > 1
+                ? "lançamentos"
+                : "lançamento"}
             </p>
           </div>
         </header>
@@ -107,7 +140,10 @@ export function TransactionsTemplate() {
                   id="date"
                   type="date"
                   value={initialDate}
-                  onChange={(e) => setInitialDate(e.target.value)}
+                  onChange={(e) => {
+                    if (page !== 1) setPage(1);
+                    setInitialDate(e.target.value);
+                  }}
                   className="h-11 border-border/60 bg-background/60"
                 />
               </div>
@@ -118,7 +154,10 @@ export function TransactionsTemplate() {
                   id="date"
                   type="date"
                   value={finalDate}
-                  onChange={(e) => setFinalDate(e.target.value)}
+                  onChange={(e) => {
+                    if (page !== 1) setPage(1);
+                    setFinalDate(e.target.value);
+                  }}
                   className="h-11 border-border/60 bg-background/60"
                 />
               </div>
@@ -128,26 +167,41 @@ export function TransactionsTemplate() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query ?? ""}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  if (page !== 1) setPage(1);
+                  setQuery(e.target.value);
+                }}
                 placeholder="Buscar por descrição…"
                 className="h-11 border-border/60 bg-background/60 pl-10"
               />
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <FilterChip active={!type} onClick={() => setType(undefined)}>
+              <FilterChip
+                active={!type}
+                onClick={() => {
+                  setPage(1);
+                  setType(undefined);
+                }}
+              >
                 Todos
               </FilterChip>
               <FilterChip
                 active={type === "income"}
-                onClick={() => setType("income")}
+                onClick={() => {
+                  setPage(1);
+                  setType("income");
+                }}
                 tone="income"
               >
                 Entradas
               </FilterChip>
               <FilterChip
                 active={type === "expense"}
-                onClick={() => setType("expense")}
+                onClick={() => {
+                  setPage(1);
+                  setType("expense");
+                }}
                 tone="expense"
               >
                 Saídas
@@ -157,7 +211,10 @@ export function TransactionsTemplate() {
             <div className="flex flex-wrap gap-2">
               <FilterChip
                 active={category === undefined}
-                onClick={() => setCategory(undefined)}
+                onClick={() => {
+                  setPage(1);
+                  setCategory(undefined);
+                }}
                 size="sm"
               >
                 Todas categorias
@@ -166,7 +223,10 @@ export function TransactionsTemplate() {
                 <FilterChip
                   key={c.id}
                   active={category === c.id}
-                  onClick={() => setCategory(c.id)}
+                  onClick={() => {
+                    setPage(1);
+                    setCategory(c.id);
+                  }}
                   size="sm"
                 >
                   {c.name}
@@ -177,6 +237,7 @@ export function TransactionsTemplate() {
             {hasFilters && (
               <button
                 onClick={() => {
+                  setPage(1);
                   setQuery(undefined);
                   setType(undefined);
                   setCategory(undefined);
@@ -194,14 +255,14 @@ export function TransactionsTemplate() {
             <Loader2 className="h-10 w-10 animate-spin" />
           </div>
         ) : (
-          <Card className="bg-surface/40 max-h-95 divide-y divide-border/60 border-border/60 p-0 overflow-auto">
-            {transactions?.length === 0 && (
+          <Card className="bg-surface/40 max-h-90 divide-y divide-border/60 border-border/60 p-0 overflow-auto">
+            {transactions?.data?.length === 0 && (
               <div className="p-12 text-center text-sm text-muted-foreground">
                 Nenhuma transação encontrada com esses filtros.
               </div>
             )}
 
-            {transactions.map((t) => {
+            {transactions?.data?.map((t) => {
               const type = t.type?.toLowerCase() as "income" | "expense";
               const color = categoryColor(type, t.category.name);
               const isIncome = type === "income";
@@ -209,10 +270,10 @@ export function TransactionsTemplate() {
               return (
                 <div
                   key={t.id}
-                  className="group flex items-center gap-4 p-4 transition-colors hover:bg-background/40"
+                  className="group flex items-center gap-4 py-2 px-4 transition-colors hover:bg-background/40"
                 >
                   <div
-                    className="grid h-11 w-11 place-items-center rounded-xl"
+                    className="grid h-8 w-8 place-items-center rounded-xl"
                     style={{
                       background: `color-mix(in oklab, ${color} 18%, transparent)`,
                       color,
@@ -262,6 +323,17 @@ export function TransactionsTemplate() {
                     </p>
                   </div>
 
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer"
+                    onClick={() =>
+                      handleUpdateTransaction({ transactionId: t.id })
+                    }
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+
                   <DeleteTransactionButton
                     id={t.id}
                     onDelete={(id) =>
@@ -273,6 +345,54 @@ export function TransactionsTemplate() {
             })}
           </Card>
         )}
+
+        {!transactionsLoading &&
+          transactions &&
+          transactions?.meta?.totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    text="Anterior"
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    className={
+                      page === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+
+                {Array.from({ length: transactions.meta.totalPages }).map(
+                  (_, i) => (
+                    <PaginationItem key={i + 1}>
+                      <PaginationLink
+                        onClick={() => setPage(i + 1)}
+                        isActive={page === i + 1}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    text="Próximo"
+                    onClick={() =>
+                      setPage(Math.min(transactions.meta.totalPages, page + 1))
+                    }
+                    className={
+                      page === transactions.meta.totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
       </div>
     </AppLayout>
   );
